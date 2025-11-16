@@ -14,7 +14,12 @@ CREATE TABLE IF NOT EXISTS "team_member" (
     PRIMARY KEY ("team_name", "user_id")
 );
 
-CREATE TYPE "pull_request_status" AS ENUM ('OPEN', 'MERGED');
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'pull_request_status') THEN
+        CREATE TYPE pull_request_status AS ENUM ('OPEN', 'MERGED');
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "pull_request" (
     "pull_request_id" VARCHAR(256) NOT NULL PRIMARY KEY,

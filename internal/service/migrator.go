@@ -3,6 +3,7 @@ package service
 import (
 	"database/sql"
 	"log"
+	"pull_requests_service/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -10,32 +11,36 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func runMigrations() error {
-	connStr := "user=postgres password=postgres dbname=postgres host=localhost port=5432 sslmode=disable"
+func RunMigrations(config *config.Config) error {
+	connStr := config.GetDBConnectionString()
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
 	}
 
 	defer db.Close()
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		log.Fatal("could not create migration driver: %w", err)
+		log.Fatal("Could not create migration driver: %w", err)
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
 		"file://migrations",
-		"postgres",
+		config.DBName,
 		driver)
 	if err != nil {
-		log.Fatal("could not create migration instance: %w", err)
+		log.Fatal("Could not create migration instance: %w", err)
 	}
 
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		log.Fatal("could not run migrations: %w", err)
+		log.Fatal("Could not run migrations: %w", err)
 	}
 
 	log.Println("Migrations applied successfully")
